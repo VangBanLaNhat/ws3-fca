@@ -1,10 +1,6 @@
 /* eslint-disable no-prototype-builtins */
 "use strict";
 
-const chalk = require("chalk");
-const gradient = require("gradient-string");
-const echaceb = gradient(["#0061ff", "#681297"]);
-const ws = echaceb("ws3-fca");
 const getRandom = arr => arr[Math.floor(Math.random() * arr.length)];
 const defaultUserAgent = "facebookexternalhit/1.1";
 const windowsUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3";
@@ -1382,13 +1378,13 @@ const meta = prop => new RegExp(`<meta property="${prop}" content="([^"]*)"`);
 module.exports = {
   //logs
   log(...args) {
-    console.log(ws, chalk.green.bold("[LOG]"), ...args);
+    console.log("FCA", ...args);
   },
   error(...args) {
-    console.error(ws, chalk.red.bold("[ERROR]"), ...args);
+    console.error("FCA", ...args);
   },
   warn(...args) {
-    console.warn(ws, chalk.yellow.bold("[WARNING]"), ...args);
+    console.warn("FCA", ...args);
   },
   //end logs
   isReadableStream,

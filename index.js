@@ -423,14 +423,9 @@ async function loginHelper(appState, email, password, apiCustomized = {}, callba
       const detectSuspension = await checkIfSuspended(res, appState);
       if (detectSuspension) throw detectSuspension;
       utils.log("Successfully logged in.");
-      utils.log("To check updates: you may check on https://github.com/NethWs3Dev/ws3-fca");
+      //utils.log("To check updates: you may check on https://github.com/NethWs3Dev/ws3-fca");
       /*
-      Hi 😄
-      Eh ano namn kung nakita nyoto?
-      Madaya naba ako nyan,
-      Dahil may Ganito? 👇
-      Diskarte rin kayo no,
-      Wag puro panira!
+      Hi 😄 eh what if you saw it?Am I happy, because there is something like this?👇 strategy you too, don't be pure!
       
       We appreciate your support on ws3-fca,
       Please don't remove these functions.

@@ -1,59 +1,80 @@
 "use_strict";
 
-const { generateOfflineThreadingID } = require('../utils');
+var utils = require("../utils");
 
-function isCallable(func) {
-  try {
-    Reflect.apply(func, null, []);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-module.exports = function (defaultFuncs, api, ctx) {
-
+module.exports = function(defaultFuncs, api, ctx) {
   return function editMessage(text, messageID, callback) {
+    let reqID = ctx.wsReqNumber+1;
+    var resolveFunc = function() {};
+    var rejectFunc = function() {};
+    var returnPromise = new Promise(function (resolve, reject) {
+      resolveFunc = resolve;
+      rejectFunc = reject;
+    });
 
-
-    if (!ctx.mqttClient) {
-      throw new Error('Not connected to MQTT');
+    if (!callback) {
+      callback = function (err, data) {
+        if (err) {
+          return rejectFunc(err);
+        }
+        resolveFunc(data);
+      };
     }
 
-    ctx.wsReqNumber ??= 0;
-    ctx.wsTaskNumber ??= 0;
-    ctx.wsReqNumber += 1;
-    ctx.wsTaskNumber += 1;
-
-    const taskPayload = {
+    var form = {
       message_id: messageID,
       text: text,
     };
 
-    const task = {
-      failure_count: null,
-      label: '742',
-      payload: JSON.stringify(taskPayload),
-      queue_name: 'edit_message',
-      task_id: ctx.wsTaskNumber,
-    };
-
-    const content = {
+    var content = {
       app_id: '2220391788200892',
-      payload: {
+      payload: JSON.stringify({
         data_trace_id: null,
-        epoch_id: parseInt(generateOfflineThreadingID()),
-        tasks: [],
+        epoch_id: parseInt(utils.generateOfflineThreadingID()),
+        tasks: [{
+          failure_count: null,
+          label: '742',
+          payload: JSON.stringify(form),
+          queue_name: 'edit_message',
+          task_id: ++ctx.wsTaskNumber,
+        }],
         version_id: '6903494529735864',
-      },
-      request_id: ctx.wsReqNumber,
-      type: 3,
-    };
+      }),
+      request_id: ++ctx.wsReqNumber,
+      type: 3
+    }
 
-    content.payload.tasks.push(task);
-    content.payload = JSON.stringify(content.payload);
+    ctx.mqttClient.publish('/ls_req', JSON.stringify(content), {
+      qos: 1, retain: false
+    });
+    const handleRes = function (topic, message) {
+      if (topic === "/ls_resp") {
+        let jsonMsg = JSON.parse(message.toString());
+        jsonMsg.payload = JSON.parse(jsonMsg.payload);
+        if (jsonMsg.request_id != reqID) return;
+        ctx.mqttClient.removeListener('message', handleRes);
 
-  /* if (isCallable(callback)) ctx.reqCallbacks[ctx.wsReqNumber] = callback; */
-   ctx.mqttClient.publish('/ls_req', JSON.stringify(content), { qos: 1, retain: false });
+        let msgID = jsonMsg.payload.step[1][2][2][1][2];
+        let msgReplace = jsonMsg.payload.step[1][2][2][1][4];
+        
+        if (msgReplace != text) {
+          let err = {error: "The message is too old or not from you!"}
+          // utils.error("editMessage", err);
+          
+          return callback(err, {
+            body: msgReplace,
+            messageID: msgID
+          });
+        }
+        
+        return callback(undefined, {
+          body: msgReplace,
+          messageID: msgID
+        });
+      }
+    }
+    ctx.mqttClient.on('message', handleRes);
+    
+    return returnPromise;
   };
 }
